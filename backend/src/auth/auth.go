@@ -1,26 +1,122 @@
 package controller
 
-import "github.com/gin-gonic/gin"
+import (
+	"fmt"
+	"net/http"
+	"strconv"
 
-type AuthInterface interface {
-	Login(context *gin.Context)
-	Register(context *gin.Context)
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/zahidakhyar/app-test/backend/entity"
+	"github.com/zahidakhyar/app-test/backend/helper"
+	auth_dto "github.com/zahidakhyar/app-test/backend/src/auth/dto"
+	auth_service "github.com/zahidakhyar/app-test/backend/src/auth/service"
+	user_dto "github.com/zahidakhyar/app-test/backend/src/user/dto"
+)
+
+type AuthControllerInterface interface {
+	Login(ctx *gin.Context)
+	Register(ctx *gin.Context)
+	Update(ctx *gin.Context)
+	Profile(ctx *gin.Context)
 }
 
-type Auth struct{}
-
-func NewAuth() AuthInterface {
-	return &Auth{}
+type AuthController struct {
+	authService auth_service.AuthServiceInterface
+	jwtService  auth_service.JwtServiceInterface
 }
 
-func (auth *Auth) Login(context *gin.Context) {
-	context.JSON(200, gin.H{
-		"message": "Login",
-	})
+func NewAuthController(authService auth_service.AuthServiceInterface, jwtService auth_service.JwtServiceInterface) AuthControllerInterface {
+	return &AuthController{
+		authService: authService,
+		jwtService:  jwtService,
+	}
 }
 
-func (auth *Auth) Register(context *gin.Context) {
-	context.JSON(200, gin.H{
-		"message": "Register",
-	})
+func (c *AuthController) Login(ctx *gin.Context) {
+	var loginDto auth_dto.LoginDto
+
+	errDto := ctx.ShouldBind(&loginDto)
+	if errDto != nil {
+		response := helper.BuildErrorResponse("Invalid request body", errDto.Error(), helper.EmptyResponse{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	auth := c.authService.VerifyCredential(loginDto.Email, loginDto.Password)
+	if result, ok := auth.(entity.User); ok {
+		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(result.ID, 10))
+		result.Token = generatedToken
+
+		response := helper.BuildResponse(true, "Ok!", result)
+		ctx.JSON(http.StatusOK, response)
+		return
+	}
+
+	response := helper.BuildErrorResponse("Invalid credential", "Invalid credential", helper.EmptyResponse{})
+	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+}
+
+func (c *AuthController) Register(ctx *gin.Context) {
+	var registerDto auth_dto.RegisterDto
+
+	errDto := ctx.ShouldBind(&registerDto)
+	if errDto != nil {
+		response := helper.BuildErrorResponse("Invalid request body", errDto.Error(), helper.EmptyResponse{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if !c.authService.IsDuplicateEmail(registerDto.Email) {
+		response := helper.BuildErrorResponse("Duplicate email", "Duplicate email", helper.EmptyResponse{})
+		ctx.AbortWithStatusJSON(http.StatusConflict, response)
+	} else {
+		createdUser := c.authService.Store(registerDto)
+		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(createdUser.ID, 10))
+		createdUser.Token = generatedToken
+		response := helper.BuildResponse(true, "Ok!", createdUser)
+		ctx.JSON(http.StatusOK, response)
+	}
+}
+
+func (c *AuthController) Update(ctx *gin.Context) {
+	var updateDto user_dto.UpdateUserDto
+
+	errDto := ctx.ShouldBind(&updateDto)
+	if errDto != nil {
+		response := helper.BuildErrorResponse("Invalid request body", errDto.Error(), helper.EmptyResponse{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	authHeader := ctx.GetHeader("Authorization")
+	token, errToken := c.jwtService.ValidateToken(authHeader)
+	if errToken != nil {
+		panic(errToken.Error())
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	id, err := strconv.ParseUint(fmt.Sprintf("%v", claims["user_id"]), 10, 64)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	updateDto.ID = id
+	updatedUser := c.authService.Update(updateDto)
+	response := helper.BuildResponse(true, "Ok!", updatedUser)
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *AuthController) Profile(ctx *gin.Context) {
+	authHeader := ctx.GetHeader("Authorization")
+	token, errToken := c.jwtService.ValidateToken(authHeader)
+	if errToken != nil {
+		panic(errToken.Error())
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	id := fmt.Sprintf("%v", claims["user_id"])
+	profile := c.authService.Profile(id)
+	response := helper.BuildResponse(true, "Ok!", profile)
+	ctx.JSON(http.StatusOK, response)
 }
