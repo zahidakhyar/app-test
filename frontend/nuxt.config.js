@@ -41,10 +41,7 @@ export default {
     strategies: {
       local: {
         token: {
-          property: 'token',
-          global: true,
-          // required: true,
-          // type: 'Bearer'
+          property: 'data.token',
         },
         user: {
           property: 'data',
@@ -56,7 +53,15 @@ export default {
           user: { url: '/auth/profile', method: 'get' },
         },
       },
-    }
+    },
+
+    redirect: {
+      login: '/login',
+      logout: '/login',
+      home: '/',
+    },
+
+    plugins: ['~/plugins/axios'],
   },
 
   pwa: {

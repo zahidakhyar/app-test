@@ -4,23 +4,29 @@
       <div class="col-12">
         <div class="card m-auto" style="max-width: 300px">
           <div class="card-header">
-            <h4 class="card-title text-center">
-              Login
-            </h4>
+            <h4 class="card-title text-center">Login</h4>
           </div>
           <div class="card-body">
-            <template v-if="errors.length">
-              <error-forms :errors="errors"></error-forms>
-            </template>
+            <b-alert v-if="error_message" show variant="danger">{{ error_message }}</b-alert>
             <form ref="form" @submit.prevent="submit">
-              <b-form-group label="Email" label-for="name">
+              <b-form-group label="Email" label-for="email">
                 <b-form-input
-                  id="name"
+                  id="email"
                   v-model="params.email"
                   type="email"
                   trim
                   required
+                  :class="{
+                    'is-invalid': errors.email,
+                  }"
+                  @keyup.enter="submit"
                 />
+                <b-form-invalid-feedback
+                  v-if="errors.email"
+                  id="input-live-feedback"
+                >
+                  {{ errors.email[0] }}
+                </b-form-invalid-feedback>
               </b-form-group>
               <b-form-group label="Password" label-for="password">
                 <b-form-input
@@ -29,7 +35,17 @@
                   type="password"
                   trim
                   required
+                  :class="{
+                    'is-invalid': errors.password,
+                  }"
+                  @keyup.enter="submit"
                 />
+                <b-form-invalid-feedback
+                  v-if="errors.password"
+                  id="input-live-feedback"
+                >
+                  {{ errors.password[0] }}
+                </b-form-invalid-feedback>
               </b-form-group>
             </form>
           </div>
@@ -58,6 +74,9 @@
 
 <script>
 export default {
+  middleware: 'auth',
+  auth: 'guest',
+  
   data() {
     return {
       params: {
@@ -66,6 +85,7 @@ export default {
       },
       loading: false,
       errors: [],
+      error_message: '',
     }
   },
 
@@ -74,14 +94,16 @@ export default {
       this.errors = []
       this.loading = true
 
-      this.$auth.loginWith('local', {
-        data: this.params,
-      })
-      .then(() => this.$router.push('/'))
-      .catch(error => {
-        this.loading = false
-        this.errors = error.response.data.errors
-      })
+      this.$auth
+        .loginWith('local', {
+          data: this.params,
+        })
+        .then(() => this.$router.push('/'))
+        .catch((error) => {
+          this.loading = false
+          this.errors = error.response.data.errors
+          this.error_message = error.response.data.message
+        })
     },
   },
 }

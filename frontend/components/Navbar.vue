@@ -1,7 +1,7 @@
 <template>
   <b-navbar toggleable="lg" type="dark" variant="primary">
     <div class="container">
-      <nuxt-link to="/" class="navbar-brand">NavBar</nuxt-link>
+      <nuxt-link to="/" class="navbar-brand">{{ $store.state.appName }}</nuxt-link>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
@@ -12,19 +12,25 @@
 
         <b-navbar-nav class="ms-auto">
           <template v-if="$auth.user">
-            <b-nav-item-dropdown right>
-              <template #button-content>
-                <em>User</em>
-              </template>
-              <nuxt-link to="/auth/profile" class="nav-link">Profile</nuxt-link>
-              <nuxt-link to="/auth/logout" class="nav-link">Logout</nuxt-link>
-            </b-nav-item-dropdown>
+            <nuxt-link to="/profile" class="nav-link">Profile</nuxt-link>
+            <a href="" class="nav-link" @click.prevent="logout">Logout</a>
           </template>
           <template v-else>
-            <nuxt-link to="/auth/login" class="nav-link">Login</nuxt-link>
+            <nuxt-link to="/login" class="nav-link">Login</nuxt-link>
+            <nuxt-link to="/register" class="nav-link">Register</nuxt-link>
           </template>
         </b-navbar-nav>
       </b-collapse>
     </div>
   </b-navbar>
 </template>
+
+<script>
+export default {
+  methods: {
+    logout() {
+      this.$auth.logout()
+    }
+  }
+}
+</script>
