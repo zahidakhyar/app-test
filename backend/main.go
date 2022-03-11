@@ -23,7 +23,11 @@ func main() {
 	defer config.CloseDatabaseConnection(db)
 	router := gin.Default()
 
-	router.Use(cors.Default())
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowCredentials = true
+	config.AddAllowHeaders("authorization")
+	router.Use(cors.New(config))
 
 	authRoutes := router.Group("api/auth")
 	{
@@ -33,8 +37,8 @@ func main() {
 
 	profileRoutes := router.Group("api/auth/profile", middleware.AuthorizeJwt(jwtService))
 	{
-		profileRoutes.PUT("/", authController.Update)
-		profileRoutes.GET("/", authController.Profile)
+		profileRoutes.PUT("", authController.Update)
+		profileRoutes.GET("", authController.Profile)
 	}
 
 	router.Run()

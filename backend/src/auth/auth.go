@@ -35,28 +35,28 @@ func NewAuthController(authService auth_service.AuthServiceInterface, jwtService
 }
 
 func (c *AuthController) Login(ctx *gin.Context) {
-	var loginDto auth_dto.LoginDto
+	var input auth_dto.LoginDto
+	ctx.ShouldBind(&input)
 
 	rules := govalidator.MapData{
-		"email":    []string{"required", "min:4", "max:20", "email"},
+		"email":    []string{"required", "min:4", "email"},
 		"password": []string{"required", "min:4"},
 	}
 
 	opts := govalidator.Options{
-		Request: ctx.Request,
-		Data:    &loginDto,
-		Rules:   rules,
+		Data:  &input,
+		Rules: rules,
 	}
 
 	v := govalidator.New(opts)
-	e := v.ValidateJSON()
-	if e != nil {
+	e := v.ValidateStruct()
+	if len(e) > 0 {
 		response := helper.BuildErrorResponse("Invalid request body", e, helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
 
-	auth := c.authService.VerifyCredential(loginDto.Email, loginDto.Password)
+	auth := c.authService.VerifyCredential(input.Email, input.Password)
 	if result, ok := auth.(entity.User); ok {
 		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(result.ID, 10))
 		result.Token = generatedToken
@@ -71,33 +71,33 @@ func (c *AuthController) Login(ctx *gin.Context) {
 }
 
 func (c *AuthController) Register(ctx *gin.Context) {
-	var registerDto auth_dto.RegisterDto
+	var input auth_dto.RegisterDto
+	ctx.ShouldBind(&input)
 
 	rules := govalidator.MapData{
 		"name":     []string{"required"},
-		"email":    []string{"required", "min:4", "max:20", "email"},
+		"email":    []string{"required", "min:4", "email"},
 		"password": []string{"required", "min:4"},
 	}
 
 	opts := govalidator.Options{
-		Request: ctx.Request,
-		Data:    &registerDto,
-		Rules:   rules,
+		Data:  &input,
+		Rules: rules,
 	}
 
 	v := govalidator.New(opts)
-	e := v.ValidateJSON()
-	if e != nil {
-		response := helper.BuildErrorResponse("Invalid request body", e, helper.EmptyResponse{})
+	e := v.ValidateStruct()
+	if len(e) > 0 {
+		response := helper.BuildErrorResponse("Invalid request", e, helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
 
-	if !c.authService.IsDuplicateEmail(registerDto.Email) {
-		response := helper.BuildErrorResponse("Duplicate email", "Duplicate email", helper.EmptyResponse{})
+	if !c.authService.IsDuplicateEmail(input.Email) {
+		response := helper.BuildErrorResponse("Email already exists", "Email already exists", helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusConflict, response)
 	} else {
-		createdUser := c.authService.Store(registerDto)
+		createdUser := c.authService.Store(input)
 		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(createdUser.ID, 10))
 		createdUser.Token = generatedToken
 		response := helper.BuildResponse(true, "Ok!", createdUser)
@@ -106,23 +106,23 @@ func (c *AuthController) Register(ctx *gin.Context) {
 }
 
 func (c *AuthController) Update(ctx *gin.Context) {
-	var updateDto user_dto.UpdateUserDto
+	var input user_dto.UpdateUserDto
+	ctx.ShouldBind(&input)
 
 	rules := govalidator.MapData{
 		"name":     []string{"required"},
-		"email":    []string{"required", "min:4", "max:20", "email"},
+		"email":    []string{"required", "min:4", "email"},
 		"password": []string{"min:4"},
 	}
 
 	opts := govalidator.Options{
-		Request: ctx.Request,
-		Data:    &updateDto,
-		Rules:   rules,
+		Data:  &input,
+		Rules: rules,
 	}
 
 	v := govalidator.New(opts)
-	e := v.ValidateJSON()
-	if e != nil {
+	e := v.ValidateStruct()
+	if len(e) > 0 {
 		response := helper.BuildErrorResponse("Invalid request body", e, helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
@@ -140,8 +140,8 @@ func (c *AuthController) Update(ctx *gin.Context) {
 		panic(err.Error())
 	}
 
-	updateDto.ID = id
-	updatedUser := c.authService.Update(updateDto)
+	input.ID = id
+	updatedUser := c.authService.Update(input)
 	response := helper.BuildResponse(true, "Ok!", updatedUser)
 	ctx.JSON(http.StatusOK, response)
 }
