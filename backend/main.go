@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/zahidakhyar/app-test/backend/config"
 	"github.com/zahidakhyar/app-test/backend/middleware"
@@ -21,6 +22,8 @@ var (
 func main() {
 	defer config.CloseDatabaseConnection(db)
 	router := gin.Default()
+
+	router.Use(cors.Default())
 
 	authRoutes := router.Group("api/auth")
 	{

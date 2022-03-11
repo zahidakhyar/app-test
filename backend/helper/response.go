@@ -5,7 +5,7 @@ import "strings"
 type Response struct {
 	Status  bool        `json:"status"`
 	Message string      `json:"message"`
-	Error   interface{} `json:"error"`
+	Errors  interface{} `json:"errors"`
 	Data    interface{} `json:"data"`
 }
 
@@ -15,16 +15,23 @@ func BuildResponse(status bool, message string, data interface{}) Response {
 	return Response{
 		Status:  status,
 		Message: message,
-		Error:   nil,
+		Errors:  nil,
 		Data:    data,
 	}
 }
 
-func BuildErrorResponse(message string, error string, data interface{}) Response {
+func BuildErrorResponse(message string, errors, data interface{}) Response {
+	switch v := errors.(type) {
+	case map[string]interface{}:
+		errors = v
+	case string:
+		errors = strings.Split(v, "\n")
+	}
+
 	return Response{
 		Status:  false,
 		Message: message,
 		Data:    data,
-		Error:   strings.Split(error, "\n"),
+		Errors:  errors,
 	}
 }

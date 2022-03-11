@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/thedevsaddam/govalidator"
 	"github.com/zahidakhyar/app-test/backend/entity"
 	"github.com/zahidakhyar/app-test/backend/helper"
 	auth_dto "github.com/zahidakhyar/app-test/backend/src/auth/dto"
@@ -36,9 +37,21 @@ func NewAuthController(authService auth_service.AuthServiceInterface, jwtService
 func (c *AuthController) Login(ctx *gin.Context) {
 	var loginDto auth_dto.LoginDto
 
-	errDto := ctx.ShouldBind(&loginDto)
-	if errDto != nil {
-		response := helper.BuildErrorResponse("Invalid request body", errDto.Error(), helper.EmptyResponse{})
+	rules := govalidator.MapData{
+		"email":    []string{"required", "min:4", "max:20", "email"},
+		"password": []string{"required", "min:4"},
+	}
+
+	opts := govalidator.Options{
+		Request: ctx.Request,
+		Data:    &loginDto,
+		Rules:   rules,
+	}
+
+	v := govalidator.New(opts)
+	e := v.ValidateJSON()
+	if e != nil {
+		response := helper.BuildErrorResponse("Invalid request body", e, helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
@@ -60,9 +73,22 @@ func (c *AuthController) Login(ctx *gin.Context) {
 func (c *AuthController) Register(ctx *gin.Context) {
 	var registerDto auth_dto.RegisterDto
 
-	errDto := ctx.ShouldBind(&registerDto)
-	if errDto != nil {
-		response := helper.BuildErrorResponse("Invalid request body", errDto.Error(), helper.EmptyResponse{})
+	rules := govalidator.MapData{
+		"name":     []string{"required"},
+		"email":    []string{"required", "min:4", "max:20", "email"},
+		"password": []string{"required", "min:4"},
+	}
+
+	opts := govalidator.Options{
+		Request: ctx.Request,
+		Data:    &registerDto,
+		Rules:   rules,
+	}
+
+	v := govalidator.New(opts)
+	e := v.ValidateJSON()
+	if e != nil {
+		response := helper.BuildErrorResponse("Invalid request body", e, helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
@@ -82,9 +108,22 @@ func (c *AuthController) Register(ctx *gin.Context) {
 func (c *AuthController) Update(ctx *gin.Context) {
 	var updateDto user_dto.UpdateUserDto
 
-	errDto := ctx.ShouldBind(&updateDto)
-	if errDto != nil {
-		response := helper.BuildErrorResponse("Invalid request body", errDto.Error(), helper.EmptyResponse{})
+	rules := govalidator.MapData{
+		"name":     []string{"required"},
+		"email":    []string{"required", "min:4", "max:20", "email"},
+		"password": []string{"min:4"},
+	}
+
+	opts := govalidator.Options{
+		Request: ctx.Request,
+		Data:    &updateDto,
+		Rules:   rules,
+	}
+
+	v := govalidator.New(opts)
+	e := v.ValidateJSON()
+	if e != nil {
+		response := helper.BuildErrorResponse("Invalid request body", e, helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
