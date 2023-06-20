@@ -56,7 +56,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	auth := c.authService.VerifyCredential(input.Email, input.Password)
+	auth := c.authService.WithContext(ctx).VerifyCredential(input.Email, input.Password)
 	if result, ok := auth.(entity.User); ok {
 		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(result.ID, 10))
 		result.Token = generatedToken
@@ -93,11 +93,11 @@ func (c *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	if !c.authService.IsDuplicateEmail(input.Email) {
+	if !c.authService.WithContext(ctx).IsDuplicateEmail(input.Email) {
 		response := helper.BuildErrorResponse("Email already exists", "Email already exists", helper.EmptyResponse{})
 		ctx.AbortWithStatusJSON(http.StatusConflict, response)
 	} else {
-		createdUser := c.authService.Store(input)
+		createdUser := c.authService.WithContext(ctx).Store(input)
 		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(createdUser.ID, 10))
 		createdUser.Token = generatedToken
 		response := helper.BuildResponse(true, "Ok!", createdUser)
@@ -141,7 +141,7 @@ func (c *AuthController) Update(ctx *gin.Context) {
 	}
 
 	input.ID = id
-	updatedUser := c.authService.Update(input)
+	updatedUser := c.authService.WithContext(ctx).Update(input)
 	response := helper.BuildResponse(true, "Ok!", updatedUser)
 	ctx.JSON(http.StatusOK, response)
 }
@@ -155,7 +155,7 @@ func (c *AuthController) Profile(ctx *gin.Context) {
 
 	claims := token.Claims.(jwt.MapClaims)
 	id := fmt.Sprintf("%v", claims["user_id"])
-	profile := c.authService.Profile(id)
+	profile := c.authService.WithContext(ctx).Profile(id)
 	response := helper.BuildResponse(true, "Ok!", profile)
 	ctx.JSON(http.StatusOK, response)
 }

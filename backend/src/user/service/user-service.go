@@ -1,6 +1,7 @@
 package user_service
 
 import (
+	"context"
 	"log"
 
 	"github.com/zahidakhyar/app-test/backend/entity"
@@ -9,6 +10,8 @@ import (
 )
 
 type UserServiceInterface interface {
+	WithContext(ctx context.Context) UserServiceInterface
+
 	Store(user entity.User) entity.User
 	Update(user entity.User) entity.User
 	VerifyCredential(email string, password string) interface{}
@@ -18,12 +21,22 @@ type UserServiceInterface interface {
 }
 
 type userConnection struct {
+	ctx context.Context
+
 	connection *gorm.DB
 }
 
 func NewUserService(db *gorm.DB) UserServiceInterface {
 	return &userConnection{
+		ctx:        context.Background(),
 		connection: db,
+	}
+}
+
+func (db *userConnection) WithContext(ctx context.Context) UserServiceInterface {
+	return &userConnection{
+		ctx:        ctx,
+		connection: db.connection.WithContext(ctx),
 	}
 }
 

@@ -11,6 +11,15 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+    ],
+    __dangerouslyDisableSanitizers: ['script'],
+    script: [
+      {
+        hid: 'NewRelic',
+        src: '/nr.js',
+        defer: true,
+        type: 'text/javascript',
+      }
     ]
   },
 
@@ -63,6 +72,8 @@ export default {
 
     plugins: ['~/plugins/axios'],
   },
+
+  ssr: false,
 
   pwa: {
     manifest: {

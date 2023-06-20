@@ -1,6 +1,7 @@
 package auth_service
 
 import (
+	"context"
 	"log"
 
 	"github.com/mashingan/smapping"
@@ -11,6 +12,8 @@ import (
 )
 
 type AuthServiceInterface interface {
+	WithContext(ctx context.Context) AuthServiceInterface
+
 	Store(user auth_dto.RegisterDto) entity.User
 	Update(user user_dto.UpdateUserDto) entity.User
 	Profile(userID string) entity.User
@@ -26,6 +29,12 @@ type AuthService struct {
 func NewAuthService(userService user_service.UserServiceInterface) AuthServiceInterface {
 	return &AuthService{
 		userService: userService,
+	}
+}
+
+func (service *AuthService) WithContext(ctx context.Context) AuthServiceInterface {
+	return &AuthService{
+		userService: service.userService.WithContext(ctx),
 	}
 }
 
