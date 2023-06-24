@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/zahidakhyar/app-test/backend/config"
@@ -26,10 +28,10 @@ func main() {
 	defer config.CloseDatabaseConnection(db)
 
 	app, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("app-test [Backend]"),
-		newrelic.ConfigLicense("90b52b3201fa78c293523de43cfb61364a22NRAL"),
-		newrelic.ConfigDistributedTracerEnabled(true),
-		newrelic.ConfigEnabled(true),
+		newrelic.ConfigAppName(os.Getenv("NEW_RELIC_APP_NAME")),
+		newrelic.ConfigLicense(os.Getenv("NEW_RELIC_LICENSE_KEY")),
+		newrelic.ConfigDistributedTracerEnabled(os.Getenv("NEW_RELIC_DISTRIBUTED_TRACER_ENABLED") == "true"),
+		newrelic.ConfigEnabled(os.Getenv("NEW_RELIC_ENABLED") == "true"),
 	)
 	if err != nil {
 		panic(err)
