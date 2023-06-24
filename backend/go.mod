@@ -11,6 +11,8 @@ require (
 
 require (
 	github.com/gin-contrib/cors v1.3.1
+	github.com/newrelic/go-agent/v3/integrations/logcontext-v2/nrlogrus v1.0.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/thedevsaddam/govalidator v1.9.10
 )
 

@@ -2,8 +2,8 @@ package user_service
 
 import (
 	"context"
-	"log"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/zahidakhyar/app-test/backend/entity"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -41,14 +41,14 @@ func (db *userConnection) WithContext(ctx context.Context) UserServiceInterface 
 }
 
 func (db *userConnection) Store(user entity.User) entity.User {
-	user.Password = hashPassword([]byte(user.Password))
+	user.Password = db.hashPassword([]byte(user.Password))
 	db.connection.Save(&user)
 	return user
 }
 
 func (db *userConnection) Update(user entity.User) entity.User {
 	if user.Password != "" {
-		user.Password = hashPassword([]byte(user.Password))
+		user.Password = db.hashPassword([]byte(user.Password))
 	}
 
 	db.connection.Save(&user)
@@ -63,9 +63,7 @@ func (db *userConnection) VerifyCredential(email string, password string) interf
 		return false
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return false
 	}
 
@@ -89,11 +87,11 @@ func (db *userConnection) Profile(userID string) entity.User {
 	return user
 }
 
-func hashPassword(password []byte) string {
-	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.MinCost)
+func (db *userConnection) hashPassword(password []byte) string {
+	defer newrelic.FromContext(db.ctx).StartSegment("hashPassword").End()
 
+	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.MinCost)
 	if err != nil {
-		log.Println("Error while hashing password")
 		panic("Error while hashing password")
 	}
 

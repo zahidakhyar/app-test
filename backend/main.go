@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/zahidakhyar/app-test/backend/config"
 	"github.com/zahidakhyar/app-test/backend/middleware"
 	controller "github.com/zahidakhyar/app-test/backend/src/auth"
@@ -12,6 +13,7 @@ import (
 	user_service "github.com/zahidakhyar/app-test/backend/src/user/service"
 	"gorm.io/gorm"
 
+	"github.com/newrelic/go-agent/v3/integrations/logcontext-v2/nrlogrus"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
@@ -36,6 +38,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	logrus.SetFormatter(nrlogrus.NewFormatter(app, &logrus.TextFormatter{}))
 
 	router := gin.Default()
 

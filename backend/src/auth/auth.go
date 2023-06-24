@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/sirupsen/logrus"
 	"github.com/thedevsaddam/govalidator"
 	"github.com/zahidakhyar/app-test/backend/entity"
 	"github.com/zahidakhyar/app-test/backend/helper"
@@ -62,11 +63,13 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		result.Token = generatedToken
 
 		response := helper.BuildResponse(true, "Ok!", result)
+		logrus.WithContext(ctx).Infof("Response: %#v", response)
 		ctx.JSON(http.StatusOK, response)
 		return
 	}
 
 	response := helper.BuildErrorResponse("Invalid credential", "Invalid credential", helper.EmptyResponse{})
+	logrus.WithContext(ctx).Infof("Response: %#v", response)
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 }
 
@@ -89,18 +92,21 @@ func (c *AuthController) Register(ctx *gin.Context) {
 	e := v.ValidateStruct()
 	if len(e) > 0 {
 		response := helper.BuildErrorResponse("Invalid request", e, helper.EmptyResponse{})
+		logrus.WithContext(ctx).Infof("Response: %#v", response)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if !c.authService.WithContext(ctx).IsDuplicateEmail(input.Email) {
 		response := helper.BuildErrorResponse("Email already exists", "Email already exists", helper.EmptyResponse{})
+		logrus.WithContext(ctx).Infof("Response: %#v", response)
 		ctx.AbortWithStatusJSON(http.StatusConflict, response)
 	} else {
 		createdUser := c.authService.WithContext(ctx).Store(input)
 		generatedToken := c.jwtService.GenerateToken(strconv.FormatUint(createdUser.ID, 10))
 		createdUser.Token = generatedToken
 		response := helper.BuildResponse(true, "Ok!", createdUser)
+		logrus.WithContext(ctx).Infof("Response: %#v", response)
 		ctx.JSON(http.StatusOK, response)
 	}
 }
@@ -143,6 +149,7 @@ func (c *AuthController) Update(ctx *gin.Context) {
 	input.ID = id
 	updatedUser := c.authService.WithContext(ctx).Update(input)
 	response := helper.BuildResponse(true, "Ok!", updatedUser)
+	logrus.WithContext(ctx).Infof("Response: %#v", response)
 	ctx.JSON(http.StatusOK, response)
 }
 
@@ -157,5 +164,6 @@ func (c *AuthController) Profile(ctx *gin.Context) {
 	id := fmt.Sprintf("%v", claims["user_id"])
 	profile := c.authService.WithContext(ctx).Profile(id)
 	response := helper.BuildResponse(true, "Ok!", profile)
+	logrus.WithContext(ctx).Infof("Response: %#v", response)
 	ctx.JSON(http.StatusOK, response)
 }
