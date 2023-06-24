@@ -40,7 +40,12 @@ func main() {
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowCredentials = true
-	config.AddAllowHeaders("authorization")
+	config.AddAllowHeaders(
+		"authorization",
+		"newrelic",
+		"traceparent",
+		"tracestate",
+	)
 	router.Use(
 		cors.New(config),
 		nrgin.Middleware(app),
